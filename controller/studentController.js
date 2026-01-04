@@ -1,54 +1,36 @@
 const db = require("../utils/db-connection")
+const Student = require('../models/students')
 
-const addStudent = (req,res)=>{
- 
+
+
+const addStudent = async (req,res)=>{
+    try{
+         const{name,email} = req.body;
+         const student = await Student.create({
+            name:name,
+            email:email
+            
+            })
+            res.status(201).send(`User with name:${name} is created!`)
+
+     }catch(error){
+         res.status(500).send('Unable to make an entry')
+     }
+
     
-    const{name,email,age} = req.body;
-    
-    if(!name || !email || !age)
-    {
-        return res.status(400).json({
-            message:"All fields are mandatory"
-        })
-    }
-
-    const addStudentQuery = `INSERT INTO students(name,email,age) VALUES(?,?,?)`
-    db.execute(addStudentQuery,[name,email,age],(err)=>{
-        if(err)
-
-        {
-            console.log(err.message)
-            return err.message
-        }
-        res.status(201).json({
-            success:true,
-            message:`student - ${name} details added!`
-        })
-    })
-
-
 }
 
 
-const getAllStudents = (req,res)=>{
-const getStudentQuery = `SELECT * FROM students`
-db.execute(getStudentQuery,(err,result)=>{
-    if(err){
-        console.log(err.message)
-        return res.status(500).json({message:err.message})
+const getAllStudents = async (req,res)=>{
+ 
+    try{
+        const student = await Student.findAll()
+         if(student.length === 0) res.status(404).send('List is empty!!')
+            res.status(200).send(student)
+    }catch(error){
+
     }
-    if(result.length === 0)
-    {
-        return res.send(404).json({
-            message:"Student list is empty!"
-        })
-    }
-        return res.status(200).json({
-            success:true,
-            totalStudents:result.length,
-            result
-        })
-})
+ 
 }
 
 const getByIdStudent=(req,res)=>
@@ -86,72 +68,47 @@ const getByIdStudent=(req,res)=>
 
 
 
-    const modifyStudent = (req,res)=>
+    const modifyStudent = async (req,res)=>
         {
-            const{id} = req.params;
-            const {name,email,age} = req.body;
+            try{
+                const{id} = req.params;
+             const {name} = req.body;
             
-            if(isNaN(id))
-                {
-                    return res.status(400).json({
-                        message:"Id is invalid"
-                    })
-                }
-            if(!name || !email || !age)
-                {
-                    return res.status(400).json({
-                        message:"All fields are mandatory to change students details"
-                    })
-                }
-                
-                    
-            const modifyQuery = `UPDATE students set name =?, email=?, age=? WHERE id = ?`
+            const student = await Student.findByPk(id)
 
-            db.execute(modifyQuery,[name,email,age,id],(err,result)=>{
-                if(err){
-                    return res.status(500).json({message:err.message})
-                }
-                if (result.affectedRows === 0) {
-                    return res.status(404).json({
-                        message: "Student not found"
-                });
-                }
-                return res.status(200).json({
-                 message:`Student with id - ${id} updated successfully`
-                })
-
-            })
-
+             if(!student){
+                res.status(404).send("User Not Found!!")
+             }
+             student.name = name;
+              
+             await student.save();
+             res.status(200).send("User updated successfully//")
+            }
+            catch(error){
+                res.status(500).send("User cannot be updated!!")
+            }
+            
 
         }
 
-const deleteStudent = (req,res)=>{
-      const{id} = req.params;
-       if(isNaN(id))
-                {
-                    return res.status(400).json({
-                        message:"Id is invalid"
-                    })
-                }
-
-
-      const deleteQuery = `DELETE FROM students WHERE id = ? `
-      db.execute(deleteQuery,[id],(err,result)=>{
-         if(err)
-            {
-              return res.status(500).json({message:err.message})
+const deleteStudent = async (req,res)=>{
+      
+    try{
+        const{id} = req.params;
+         const student =  await Student.destroy({
+            where:{
+                id:id
             }
-            
-            if (result.affectedRows === 0) {
-                    return res.status(404).json({
-                        message: "Student not found"
-                });
-               }
-               return res.status(200).json({
-                message:"Student deleted successfully"
-               })
-
- })
+         })
+         if(!student){
+            res.status(404).send("User is not found")
+         }
+         res.status(200).send("User is deleted")
+    }catch(error){
+            res.status(500).send("User cannot be deleted!!")
+    }
+    
+ 
 }
 
 
